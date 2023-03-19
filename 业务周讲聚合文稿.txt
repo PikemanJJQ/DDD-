@@ -1,0 +1,54 @@
+以下代码：
+public class Student
+{
+   private Set<Course> course = new HashSet<>();
+   public Set <Course> getCourses(){
+       return this.courses;
+       }
+}
+public class Course{
+    private Set<Student> student = new HashSet<>();
+    public Set<Student> getStudents(){
+        return this.students;
+        }
+    }
+    Student owen = studentRepository.studentByName("Owen");
+    Course dddCourse = courseRepository.courseByName("DDD");
+    Set<Student> students = dddCourse.getStudents();
+用例：通过资源库(Repository)分别获得Student和Courses实例时是否需要各自加载所有选修课程与所有选课学生...
+有可能当你为学生加载了所有选修课程后，业务场景却不需要这些信息延迟加载（Lazy loading）可以缓解此问题 ，但是延迟加载不仅会使模型变得更加复杂，还会收到ORM框架提供的延迟加载实现机制的约束.....现实中的对象图就是你们常说的扯淡
+所以设计初期，我们习惯专注于领域中实体和值对象，以及他们之间的关联
+这往往会忽略领域对象之间的逻辑界限，以至于建立的模型边界蔓延，，，所以可以再划分逻辑单元
+聚合是领域对象的显示分组皆在支持领域模型的行为和业务不变形的范围同时充当一致性和事物性边界，每个聚合都有一个根实体，并且是唯一可被外访问的聚合可保证模型的业务不变形，模型的变化需要经过聚合根；打个比方订单总额与订单项之间的联动。当订单项调整后订单总额也该随之变化。
+传统的做法是在一个事务中，去更新订单状态和扣减库存这样似乎满足了业务需求场景，但是我们不得不考虑并发冲突，问题可能表现为数据级别的阻塞或者更新失败（由于悲观并发）；总结错误将业务涉及到的所有领域对象都放到了一个事务性边界中去，从领域不变形的角度来看，我们应该维护各子域内业务规则的不变形。
+应用服务（Application Service）：我司业务特征不仅具有编排协调领域服务来实现用例，同时负责DTO转换，安全与权限校验，持久化事务控制（UOW）或向其他系统发生基于领域事件的消息通知（Facade）门面模式
+public calss CreateOrderCommand : IApplicationCommand{
+	OrderInfo_orderinfo;	
+	int_orderId;
+public CreateOrderCommand(OrderInfo order){
+	_orderInfo = order;
+}
+	public int OrderID {get {return_orderId;}}
+	public int_Run(){
+	//事务开始接受产品信息检查库中是否有足够订购品，检查信用卡状态....添加并提交获取ID储存在局部变量中
+}
+}
+业务领域服务特征：
+public interface ITaskManager : IDomainService
+{
+	void AssignTaskToPerson(Task task,person person);
+}
+public class TaskManager : DomainService,ItaskManager
+{
+	public void AssignTaskToPerson(Task task,Person person)
+{
+	if(task.AssignedPersonId==person.Id){
+retuen;
+}
+	if(task.State!=TaskState.Active){
+	throw new ApplicationException("task is not active");
+}
+	task.AssignedPersonId = person.Id;
+}	
+}
+用例相关不等于业务逻辑相关！DDD不是某种技术而是我们的讨论与发现
